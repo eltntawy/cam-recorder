@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bytedeco.javacv.OpenCVFrameGrabber;
 
 
 public class CamRecorder extends JFrame {
@@ -36,6 +37,7 @@ public class CamRecorder extends JFrame {
 
     List<Mixer> mixers;
     List<String> mixersNmaes;
+    String devicesArray [] ;
 
 
     public final String NO_DEVICES = "No Devices";
@@ -57,7 +59,7 @@ public class CamRecorder extends JFrame {
         mainPanel.setLayout(new BorderLayout());
 
         setTitle("Camera Recorder");
-        setSize(1000, 1100);
+        setSize(800, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         control = new JButton("Start");
         text1 = new JLabel("  ");
@@ -111,17 +113,20 @@ public class CamRecorder extends JFrame {
                 // get all available cam devices
                 List<String> videoDeviceOption = new ArrayList<String>();
                 videoDeviceOption.add(NO_DEVICES);
+                
+                
                 try {
+                    devicesArray = VideoInputFrameGrabber.getDeviceDescriptions();
+                
+                    
+                    videoDeviceOption = new ArrayList<String>();
+                    for(String device : devicesArray) {
+                        videoDeviceOption.add(device);
+                    }
 
-                    FFmpeg ffmpeg = new FFmpeg();
-
-                    videoDeviceOption = ffmpeg.listDiveces();
-                    System.out.println(Arrays.toString(videoDeviceOption.toArray()));
-
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                } catch (FrameGrabber.Exception ex) {
+                    ex.printStackTrace();
                 }
-
 
                 settingFram.setSize(300, 200);
                 settingFram.setLocationRelativeTo(CamRecorder.this);
@@ -154,10 +159,21 @@ public class CamRecorder extends JFrame {
                         try {
 
                             currentWebcamDeviceIndex = camSettingsComboBox.getSelectedIndex();
+                            videoRecordingThread = new VideoRecordingThread(canvas, currentWebcamDeviceIndex, mixer);
+                            
                             int audioIndex = micSettingsComboBox.getSelectedIndex();
 
                             mixer = mixers.get(audioIndex);
 
+                            
+            if(devicesArray != null && devicesArray.length > currentWebcamDeviceIndex) {                
+                System.out.println("Selected Cam Device: "+devicesArray[currentWebcamDeviceIndex]);
+            } else {
+                                System.out.println("Selected Cam Device: "+NO_DEVICES);
+
+            }
+            System.out.println("Selected Audio Device: "+mixer.getMixerInfo().getName());
+            
                         } catch (java.lang.Exception e) {
                             JOptionPane.showMessageDialog(settingFram, e.getMessage(), "error", JOptionPane.ERROR_MESSAGE);
                             e.printStackTrace();
@@ -224,18 +240,27 @@ public class CamRecorder extends JFrame {
     private void controlActionPerformed(ActionEvent evt) throws Exception, FrameGrabber.Exception, InterruptedException {
 
         if (control.getText().equals("Stop")) {
+            
+            
+            System.out.println("Selected Cam Device: "+currentWebcamDeviceIndex);
+            System.out.println("Selected Audio Device: "+mixer.getMixerInfo().getName());
+            
             catcher.stop();
             videoRecordingThread.getRecorder().stop();
             videoRecordingThread.getGrabber().stop();
             control.setText("Start");
 
             text1.setText("");
+            
+            settingBtn.setEnabled(false);
         } else {
             control.setText("Stop");
             catcher = new Thread(videoRecordingThread);
             catcher.start();
             text1.setText("<html><font color='red'>Recording ...</font></html>");
             control.setText("Stop");
+                        settingBtn.setEnabled(true);
+
         }
     }
 

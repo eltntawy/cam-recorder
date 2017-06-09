@@ -20,8 +20,8 @@ public class VideoRecordingThread implements Runnable {
     private FFmpegFrameRecorder recorder = null;
     private OpenCVFrameGrabber grabber = null;
     private Mixer mixer;
-    private final int CAPTUREWIDTH = 1280;
-    private final int CAPTUREHRIGHT = 720;
+    private final int CAPTUREWIDTH = 800;
+    private final int CAPTUREHRIGHT = 600;
 
     private int FRAME_RATE = 30;
     private int GOP_LENGTH_IN_FRAMES = 60;
@@ -45,9 +45,10 @@ public class VideoRecordingThread implements Runnable {
             try {
 
                 String userHome = System.getProperty("user.home");
-                System.out.println(userHome);
 
                 File file = new File(userHome + "/output.mp4");
+                                System.out.println("output file will saved under: "+file.getAbsolutePath());
+
 
 
                 grabber.setImageWidth(CAPTUREWIDTH);
