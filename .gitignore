@@ -26,3 +26,5 @@ hs_err_pid*
 
 .idea/vcs.xml
 target/generated-sources/
+/.idea/
+/cam-recorder.iml
