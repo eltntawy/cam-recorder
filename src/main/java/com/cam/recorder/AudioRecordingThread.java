@@ -17,13 +17,13 @@ public class AudioRecordingThread extends Thread {
     // Thread for audio capture, this could be in a nested private class if you prefer...
 
     private static FFmpegFrameRecorder recorder = null;
-    private int audioDeviceIndex = 0;
+    private Mixer mixer ;
     private int frameRate = 30;
 
-    public AudioRecordingThread(FFmpegFrameRecorder recorder, int audioDeviceIndex, int frameRate) {
+    public AudioRecordingThread(FFmpegFrameRecorder recorder, Mixer mixer, int frameRate) {
 
         this.recorder = recorder;
-        this.audioDeviceIndex = audioDeviceIndex;
+        this.mixer = mixer;
         this.frameRate = frameRate;
     }
 
@@ -37,9 +37,7 @@ public class AudioRecordingThread extends Thread {
 
 
 
-        // Get TargetDataLine with that format
-        Mixer.Info[] minfoSet = AudioSystem.getMixerInfo();
-        Mixer mixer = AudioSystem.getMixer(minfoSet[audioDeviceIndex]);
+
         DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, audioFormat);
 
         try {

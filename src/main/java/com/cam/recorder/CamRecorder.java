@@ -1,17 +1,16 @@
 package com.cam.recorder;
 
+import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacv.FrameGrabber;
-import org.bytedeco.javacv.FrameRecorder.Exception;
 import org.bytedeco.javacv.VideoInputFrameGrabber;
 
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Mixer;
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.io.IOException;
+import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,12 +23,28 @@ public class CamRecorder extends JFrame {
     private JLabel text1;
     private JPanel canvas;
 
-
+    private int defaultAudioMixerIndex = 0;
     private static final long serialVersionUID = 1L;
     private VideoRecordingThread videoRecordingThread;
     private Thread catcher;
 
+
+    private int currentWebcamDeviceIndex = 0;
+    private Mixer mixer;
+
+
+    List<Mixer> mixers;
+    List<String> mixersNmaes;
+
     public CamRecorder() {
+
+
+        // get all available audio devices
+        mixers = discoverMicrophones();
+        mixersNmaes = new ArrayList<String>();
+        for (Mixer mixer : mixers) {
+            mixersNmaes.add(mixer.getMixerInfo().getName());
+        }
 
 
         JPanel mainPanel = new JPanel();
@@ -44,7 +59,10 @@ public class CamRecorder extends JFrame {
         text1 = new JLabel("  ");
         canvas = new JPanel();
 
-        videoRecordingThread = new VideoRecordingThread(canvas);
+        Mixer.Info[] minfoSet = AudioSystem.getMixerInfo();
+        mixer = AudioSystem.getMixer(minfoSet[defaultAudioMixerIndex]);
+
+        videoRecordingThread = new VideoRecordingThread(canvas, currentWebcamDeviceIndex, mixer);
 
 
         mainPanel.add(canvas, BorderLayout.CENTER);
@@ -76,10 +94,6 @@ public class CamRecorder extends JFrame {
                     controlActionPerformed(evt);
                 } catch (Exception ex) {
                     Logger.getLogger(CamRecorder.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (FrameGrabber.Exception ex) {
-                    Logger.getLogger(CamRecorder.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(CamRecorder.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
 
@@ -91,23 +105,30 @@ public class CamRecorder extends JFrame {
                 final JFrame settingFram = new JFrame("Setting");
 
 
-                // get all available audio devices
-                Mixer.Info[] audioDevices = AudioSystem.getMixerInfo();
-                List<String> audioDevicesNames = new ArrayList<String>();
-                for (Mixer.Info info : audioDevices) {
-                    Mixer appMixer = AudioSystem.getMixer(info);
-                    audioDevicesNames.add(info.getName());
+
+                try {
+                    Loader.load(VideoInputFrameGrabber.class);
+                } catch (UnsatisfiedLinkError e1) {
+                    String path = null;
+                    try {
+                        path = Loader.cacheResource(VideoInputFrameGrabber.class, "windows-x86_64/jni<module>.dll").getPath();
+
+                        new ProcessBuilder("/Users/mohamedrefaat/Downloads/depends22_x64/depends.exe", path).start().waitFor();
+                    } catch (InterruptedException e2) {
+                        e2.printStackTrace();
+                    } catch (IOException e2) {
+                        e2.printStackTrace();
+                    }
                 }
 
                 // get all available cam devices
                 try {
                     String videoDeviceOption[] = VideoInputFrameGrabber.getDeviceDescriptions();
                     System.out.println(Arrays.toString(videoDeviceOption));
-                }catch (java.lang.Exception e1) {
+                } catch (Exception e1) {
                     JOptionPane.showMessageDialog(settingFram, e1.getMessage(), "error", JOptionPane.ERROR_MESSAGE);
                     e1.printStackTrace();
                 }
-
 
 
                 settingFram.setSize(300, 200);
@@ -117,8 +138,8 @@ public class CamRecorder extends JFrame {
 
                 settingFram.getContentPane();
 
-                JComboBox camSettingsComboBox = new JComboBox();
-                JComboBox micSettingsComboBox = new JComboBox(audioDevicesNames.toArray());
+                final JComboBox camSettingsComboBox = new JComboBox();
+                final JComboBox micSettingsComboBox = new JComboBox(mixersNmaes.toArray());
 
                 JButton okBtn = new JButton("Ok");
 
@@ -140,6 +161,10 @@ public class CamRecorder extends JFrame {
 
                         try {
 
+                            currentWebcamDeviceIndex = camSettingsComboBox.getSelectedIndex();
+                            int audioIndex = micSettingsComboBox.getSelectedIndex();
+
+                            mixer = mixers.get(audioIndex);
 
                         } catch (java.lang.Exception e) {
                             JOptionPane.showMessageDialog(settingFram, e.getMessage(), "error", JOptionPane.ERROR_MESSAGE);
@@ -162,8 +187,46 @@ public class CamRecorder extends JFrame {
                 settingFram.setVisible(true);
                 settingFram.setResizable(false);
 
+
             }
         });
+    }
+
+
+    private List<Mixer> discoverMicrophones() {
+        List<Mixer> microphones = new ArrayList<Mixer>();
+        for (Mixer.Info mixerinfo : AudioSystem.getMixerInfo()) {
+
+            System.out.println("mixerinfo: " + mixerinfo);
+            Mixer mixer = AudioSystem.getMixer(mixerinfo);
+
+            System.out.println("mixer:     " + mixer);
+
+            System.out.println("mixerinfo: " + mixer.getLineInfo());
+            for (Line.Info lineinfo : mixer.getTargetLineInfo()) {
+                try {
+                    Line line;
+                    line = mixer.getLine(lineinfo);
+                    if (line instanceof TargetDataLine) {
+
+                        System.out.println("    lineinfo:   " + lineinfo);
+
+                        System.out.println("    line:       " + line);
+
+                        System.out.println("    lineinfo:   " + line.getLineInfo());
+                        if (mixer.isLineSupported(lineinfo)) {
+                            microphones.add(mixer);
+                        } else {
+
+                            System.out.println("    NOT SUPPORTED!");
+                        }
+                    }
+                } catch (LineUnavailableException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return microphones;
     }
 
     private void controlActionPerformed(ActionEvent evt) throws Exception, FrameGrabber.Exception, InterruptedException {

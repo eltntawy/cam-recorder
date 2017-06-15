@@ -4,6 +4,7 @@ import org.bytedeco.javacpp.avcodec;
 import org.bytedeco.javacv.*;
 import org.bytedeco.javacv.Frame;
 
+import javax.sound.sampled.Mixer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -18,8 +19,7 @@ public class VideoRecordingThread implements Runnable {
 
     private FFmpegFrameRecorder recorder = null;
     private OpenCVFrameGrabber grabber = null;
-    private int WEBCAM_DEVICE_INDEX = 0;
-    private int AUDIO_DEVICE_INDEX = 0;
+    private Mixer mixer;
     private final int CAPTUREWIDTH = 1280;
     private final int CAPTUREHRIGHT = 720;
 
@@ -32,11 +32,11 @@ public class VideoRecordingThread implements Runnable {
     private boolean stop = false;
 
 
-    public VideoRecordingThread(JPanel canvas) {
+    public VideoRecordingThread(JPanel canvas,int webcamDeviceIndex,Mixer mixer) {
         this.canvas = canvas;
 
-        grabber = new OpenCVFrameGrabber(WEBCAM_DEVICE_INDEX);
-
+        grabber = new OpenCVFrameGrabber(webcamDeviceIndex);
+        this.mixer = mixer;
 
     }
 
@@ -76,7 +76,7 @@ public class VideoRecordingThread implements Runnable {
 
                 recorder.start();
 
-                new AudioRecordingThread(recorder, AUDIO_DEVICE_INDEX, FRAME_RATE).start();
+                new AudioRecordingThread(recorder, mixer, FRAME_RATE).start();
 
 
                 Frame capturedFrame = null;
