@@ -106,20 +106,7 @@ public class CamRecorder extends JFrame {
 
 
 
-                try {
-                    Loader.load(VideoInputFrameGrabber.class);
-                } catch (UnsatisfiedLinkError e1) {
-                    String path = null;
-                    try {
-                        path = Loader.cacheResource(VideoInputFrameGrabber.class, "windows-x86_64/jni<module>.dll").getPath();
 
-                        new ProcessBuilder("/Users/mohamedrefaat/Downloads/depends22_x64/depends.exe", path).start().waitFor();
-                    } catch (InterruptedException e2) {
-                        e2.printStackTrace();
-                    } catch (IOException e2) {
-                        e2.printStackTrace();
-                    }
-                }
 
                 // get all available cam devices
                 try {
