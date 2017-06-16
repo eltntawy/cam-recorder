@@ -2,6 +2,7 @@ package com.cam.recorder;
 
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacv.FrameGrabber;
+import org.bytedeco.javacv.OpenCVFrameRecorder;
 import org.bytedeco.javacv.VideoInputFrameGrabber;
 
 import javax.sound.sampled.*;
@@ -35,6 +36,9 @@ public class CamRecorder extends JFrame {
 
     List<Mixer> mixers;
     List<String> mixersNmaes;
+
+
+    public final String NO_DEVICES = "No Devices";
 
     public CamRecorder() {
 
@@ -104,16 +108,17 @@ public class CamRecorder extends JFrame {
 
                 final JFrame settingFram = new JFrame("Setting");
 
-
-
-
-
                 // get all available cam devices
+                List<String> videoDeviceOption = new ArrayList<String>();
+                videoDeviceOption.add(NO_DEVICES);
                 try {
-                    String videoDeviceOption[] = VideoInputFrameGrabber.getDeviceDescriptions();
-                    System.out.println(Arrays.toString(videoDeviceOption));
+
+                    FFmpeg ffmpeg = new FFmpeg();
+
+                    videoDeviceOption = ffmpeg.listDiveces();
+                    System.out.println(Arrays.toString(videoDeviceOption.toArray()));
+
                 } catch (Exception e1) {
-                    JOptionPane.showMessageDialog(settingFram, e1.getMessage(), "error", JOptionPane.ERROR_MESSAGE);
                     e1.printStackTrace();
                 }
 
@@ -125,7 +130,7 @@ public class CamRecorder extends JFrame {
 
                 settingFram.getContentPane();
 
-                final JComboBox camSettingsComboBox = new JComboBox();
+                final JComboBox camSettingsComboBox = new JComboBox(videoDeviceOption.toArray());
                 final JComboBox micSettingsComboBox = new JComboBox(mixersNmaes.toArray());
 
                 JButton okBtn = new JButton("Ok");
@@ -217,6 +222,7 @@ public class CamRecorder extends JFrame {
     }
 
     private void controlActionPerformed(ActionEvent evt) throws Exception, FrameGrabber.Exception, InterruptedException {
+
         if (control.getText().equals("Stop")) {
             catcher.stop();
             videoRecordingThread.getRecorder().stop();

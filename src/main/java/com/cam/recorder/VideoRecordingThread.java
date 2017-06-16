@@ -97,9 +97,6 @@ public class VideoRecordingThread implements Runnable {
                         frame++;
                         waitMillis = 1000 * frame / FRAME_RATE - (System.currentTimeMillis() - startTime);
 
-                        if (stop) {
-                            break;
-                        }
                     }
                     //System.out.println("frame " + frame + ", System.currentTimeMillis() = " + System.currentTimeMillis() + ", waitMillis = " + waitMillis);
                     Thread.sleep(waitMillis);
@@ -115,10 +112,6 @@ public class VideoRecordingThread implements Runnable {
         }
     }
 
-
-    public void stop() {
-        this.stop = true;
-    }
 
 
     public FFmpegFrameRecorder getRecorder() {
